@@ -30,7 +30,7 @@ const MarketForm = () => {
             onChange={e => fetchSymbol(e.target.value)}
           >
             {symbolOptions.map((symbol, i) => {
-              return (<MenuItem value={symbol}>{symbol}</MenuItem>);
+              return (<MenuItem key={i} value={symbol}>{symbol}</MenuItem>);
             })}
           </Select>
         </FormControl>
@@ -45,7 +45,7 @@ const MarketForm = () => {
             onChange={e => filterMetricsBySelectedDays(Number(e.target.value))}
           >
             {timeGaps.map((gap, i) => {
-              return (<MenuItem value={gap}>{gap}</MenuItem>);
+              return (<MenuItem key={i} value={gap}>{gap}</MenuItem>);
             })}
           </Select>
         </FormControl>

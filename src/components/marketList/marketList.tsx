@@ -20,7 +20,7 @@ const MarketList = () => {
         </thead>
         <tbody>
           {filteredData.metrics.map(function(metric, i) {
-            return <tr>
+            return <tr key={i}>
               <td>{moment(new Date(metric.date)).utcOffset(60).format('YYYY-MM-DD')}</td>
               <td className='symbol'>{filteredData.symbol}</td>
               <td className='posts'>{metric.posts}</td>
