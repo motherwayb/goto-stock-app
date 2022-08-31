@@ -1,48 +1,55 @@
 import { useContext } from 'react';
-import MarketContext, { Metrics, SymbolItem } from '../../context/marketContext/marketContext';
+import MarketContext from '../../context/marketContext/marketContext';
+import Box from '@mui/material/Box';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
 import styles from './marketForm.module.css';
 
-interface MarketFormProps {}
-
 const MarketForm = () => {
-
   const { 
-    symbolData, 
-    filteredSymbolData, 
     selectedDays,
+    selectedSymbol,
     symbolOptions, 
-    timeGaps, 
-    fetchSymbol, 
-    setFilteredSymbolData, 
-    setSelectedDays ,
+    timeGaps,
+    fetchSymbol,
     filterMetricsBySelectedDays
   } = useContext(MarketContext);
 
   return (
-    <div>
-      <select
-        onChange={e => fetchSymbol(e.target.value)}
-      >
-        <option value="">Select a Symbol...</option>
-        {symbolOptions.map((symbol, i) => {
-          return (
-            <option key={i} value={symbol}>
-              {symbol}
-            </option>
-          );
-        })}
-      </select>
-      <select
-        onChange={e => filterMetricsBySelectedDays(Number(e.target.value))}
-      >
-        {timeGaps.map((gap, i) => {
-          return (
-            <option key={i} value={gap}>
-              {gap}
-            </option>
-          );
-        })}
-      </select>
+    <div className={styles.MarketForm}>
+      <Box sx={{ minWidth: 120 }}>
+        <FormControl sx={{ m: 2, width: '10%'}}>
+          <InputLabel id='select-symbol-input'>Symbol</InputLabel>
+          <Select
+            labelId='select-symbol-input'
+            id='symbol-select'
+            value={selectedSymbol}
+            label='Symbol'
+            onChange={e => fetchSymbol(e.target.value)}
+          >
+            {symbolOptions.map((symbol, i) => {
+              return (<MenuItem value={symbol}>{symbol}</MenuItem>);
+            })}
+          </Select>
+        </FormControl>
+        <FormControl sx={{ m: 2, width: '10%' }}>
+          <InputLabel id='select-days-input'>Days</InputLabel>
+          <Select
+            labelId='select-days-label'
+            id='DaysSelect'
+            value={selectedDays}
+            label='Days'
+            color='secondary'
+            onChange={e => filterMetricsBySelectedDays(Number(e.target.value))}
+          >
+            {timeGaps.map((gap, i) => {
+              return (<MenuItem value={gap}>{gap}</MenuItem>);
+            })}
+          </Select>
+        </FormControl>
+      </Box>
     </div>
   );
 }

@@ -1,29 +1,53 @@
 import { createContext, useState, useEffect, Dispatch, SetStateAction } from 'react';
-import RatingUtil from '../../util/ratingUtil';
+import AlgorithmUtil from '../../util/algorithmUtil';
 
 export type MarketContextType = {
-  symbolData: SymbolItem;
-  filteredSymbolData: SymbolItem;
+  filteredData: SymbolItem;
   selectedDays: number;
-  selectedMediaPosts: number;
+  selectedSymbol: string;
+  activeAlgorithm: Algorthim,
   symbolOptions: string[];
   timeGaps: number[];
   fetchSymbol: (symbol: string) => void;
-  setFilteredSymbolData: Dispatch<SetStateAction<SymbolItem>>;
-  setSelectedDays: Dispatch<SetStateAction<number>>;
   filterMetricsBySelectedDays: (days: number, symbolItem?: SymbolItem) => void
 }
 
+export enum Algorthim {
+  BASIC = 'basic',
+  VOLITILE = 'volitle'
+}
+
+export enum RecommendationText {
+  BUY = 'buy',
+  SELL = 'sell',
+  HOLD = 'hold'
+}
+
+const defaultSymbolItem = {
+  id: null, 
+  symbol: '', 
+  name: '', 
+  recommendation: {
+    thresholds: {
+      buy: 0,
+      sell: 0,
+      hold: 0
+    },
+    text: RecommendationText.HOLD
+  }, 
+  metrics: []
+} as SymbolItem;
+
+
 const defaultContext = {
-  symbolData: {id: null, symbol: '', name: '', rating: 0, recommendation: '', metrics: []} as SymbolItem,
-  filteredSymbolData: {id: null, symbol: '', name: '', rating: 0, recommendation: '', metrics: []} as SymbolItem,
+  unfilteredData: defaultSymbolItem,
+  filteredData: defaultSymbolItem,
   selectedDays: 10,
-  selectedMediaPosts: 100,
+  selectedSymbol: 'APPL',
+  activeAlgorithm: Algorthim.BASIC,
   symbolOptions: ['APPL', 'MSFT', 'AMZN', 'TSLA'],
   timeGaps: [10, 20, 30],
   fetchSymbol: ((symbol: string) => {}),
-  setFilteredSymbolData: (() => {}),
-  setSelectedDays: (() => {}),
   filterMetricsBySelectedDays: (() => {})
 }
 
@@ -32,67 +56,90 @@ const MarketContext = createContext<MarketContextType>(defaultContext);
 // @ts-ignore TODO: SET TYPE FOR CHILDREN
 export const MarketProvider = ({ children }) => {
 
-  const [symbolData, setSymbolData] = useState(defaultContext.symbolData);
-  const [filteredSymbolData, setFilteredSymbolData] = useState(defaultContext.filteredSymbolData);
+  const [unfilteredData, setUnfilteredData] = useState(defaultContext.unfilteredData);
+  const [filteredData, setFilteredData] = useState(defaultContext.filteredData);
   const [selectedDays, setSelectedDays] = useState(defaultContext.selectedDays);
-  const [selectedMediaPosts, setSelectedMediaPosts] = useState(defaultContext.selectedMediaPosts);
+  const [selectedSymbol, setSelectedSymbol] = useState(defaultContext.selectedSymbol);
+  const [activeAlgorithm, setActiveAlgorithm] = useState(defaultContext.activeAlgorithm);
+
   const symbolOptions = defaultContext.symbolOptions;
   const timeGaps = defaultContext.timeGaps;
 
+  useEffect(() => {
+    fetchSymbol(defaultContext.selectedSymbol)
+  }, [])
+
+  /**
+   * Calls the backend /market API to receive the data for the given symbol
+   * @param symbol - a string representing a symbol's name
+   */
   const fetchSymbol = async (symbol: string): Promise<void> => {
     const response = await fetch(`/market?symbol=${symbol}`);
     const data = await response.json();
-    setSymbolData(data[0]);
-
     const filteredData = {...data[0]};
+
+    setSelectedSymbol(symbol);
+    setUnfilteredData(data[0]);
     filterMetricsBySelectedDays(selectedDays, filteredData);
 
-    console.log(filteredData);
+    filteredData.recommendation = getStockRecommendation(filteredData.rating);
 
-    filteredData.rating = getStockRating(filteredData.metrics);
-    filteredData.recommedation = getRecommendationFromRating(filteredData.rating);
-    
-    setFilteredSymbolData(filteredData);
+    setFilteredData(filteredData);
   }
 
+  /**
+   * Takes in a numerical representation of the number of days to filter the
+   * symbol's price history by
+   * @param days - the number of days to filter the price history by
+   * @param symbolItem - the data for the selected symbol
+   */
   const filterMetricsBySelectedDays = (
     days: number=selectedDays, 
     symbolItem?: SymbolItem
   ): void => {
     if (!symbolItem) {
-      symbolItem = {...symbolData}
+      symbolItem = {...unfilteredData}
     }
-    symbolItem.metrics = symbolItem.metrics.filter((metric, index) => index < days);
+
+    symbolItem.metrics = symbolItem.metrics.slice(symbolItem.metrics.length - days);
+    symbolItem.recommendation = getStockRecommendation(symbolItem.metrics);
+
     setSelectedDays(days);
-    setFilteredSymbolData(symbolItem);
+    setFilteredData(symbolItem);
   }
 
-  const getStockRating = (metrics: Metrics[]) => {
-    return RatingUtil.calculateStockPriceStandardDeviation(metrics);
-  }
+  /**
+   * Gets the recommendation object for the selected symbol based on the 
+   * active algorithm
+   * @param metrics - the metrics for the selected symbol
+   * @returns a recommendation object containing thresholds and a string
+   */
+  const getStockRecommendation = (metrics: Metrics[]): Recommendation => {
+    switch(activeAlgorithm) {
+      case Algorthim.VOLITILE:
+        return AlgorithmUtil.calculateVolitileRecommendation(metrics);
+        break;
+      
+      case Algorthim.BASIC:
+        return AlgorithmUtil.calculateBasicRecommendation(metrics);
+        break;
 
-  const getRecommendationFromRating = (rating: number): string => {
-    if (rating < 3) {
-      return 'BUY';
+      default: 
+        return AlgorithmUtil.calculateBasicRecommendation(metrics);
+        break;
     }
-    if (rating < 6) {
-      return 'HOLD';
-    }
-    return 'SELL';
   }
 
   return (
     <MarketContext.Provider
       value={{
-        symbolData,
-        filteredSymbolData,
+        filteredData,
         selectedDays,
-        selectedMediaPosts,
+        selectedSymbol,
+        activeAlgorithm,
         symbolOptions,
         timeGaps,
         fetchSymbol,
-        setFilteredSymbolData,
-        setSelectedDays,
         filterMetricsBySelectedDays
       }}
     >
@@ -105,9 +152,19 @@ export type SymbolItem = {
   id: number | null;
   symbol: string;
   name: string;
-  rating: number;
-  recommendation: string;
+  recommendation: Recommendation;
   metrics: Metrics[]
+}
+
+export type Recommendation = {
+  thresholds: Thresholds;
+  text: RecommendationText.BUY | RecommendationText.SELL | RecommendationText.HOLD
+}
+
+export type Thresholds = {
+  buy: number;
+  sell: number;
+  hold: number;
 }
 
 export interface Metrics {

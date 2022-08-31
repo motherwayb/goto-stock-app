@@ -1,0 +1,30 @@
+.MarketRecommendation {
+   
+}
+.SymbolName {
+  font-size: 25px;
+  margin-left: 15px;
+  margin-right: 2px;
+}
+
+.Chip {
+  display: inline-block;
+  padding: 0px 15px;
+  height: 25px;
+  font-size: 19px;
+  border-radius: 15px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+div.sell {
+  background-color: #DC143C;
+}
+
+div.buy {
+  background-color: #3CB371;
+}
+
+div.hold {
+  background-color: #FFD700;
+}

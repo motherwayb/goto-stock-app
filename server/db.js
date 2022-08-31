@@ -1,13 +1,17 @@
 let symbolsJSON = require('./symbols.json');
-const startDate = new Date("2022-08-01");
-const endDate = new Date("2022-08-29"); //today's date
+const startDate = new Date('2022-08-01');
+const endDate = new Date(); //today's date
+const lowestPrice = 10;
+const highestPrice = 100;
+const lowestPosts = 100;
+const highestPosts = 1000;
 
 module.exports = () => {
-    let data = {market: []};
-    for (symbol in symbolsJSON.symbols) {
-        data.market.push({...symbolsJSON.symbols[symbol], metrics: getStockMetricsForDates(startDate, endDate)})
-    }
-    return data;
+  let data = {market: []};
+  for (symbol in symbolsJSON.symbols) {
+    data.market.push({...symbolsJSON.symbols[symbol], metrics: getStockMetricsForDates(startDate, endDate)})
+  }
+  return data;
 }
 
 /**
@@ -17,17 +21,17 @@ module.exports = () => {
  * @returns {Array} an object Array where each object contains a date and the stock price for that date
  */
 function getStockMetricsForDates(startDate, endDate) {
-    let metrics = [];
-    let dateIteration = new Date(startDate);
-    while (dateIteration <= endDate) {
-        metrics.push({
-            date: new Date(dateIteration),
-            price: getRandomNumber(10, 500),
-            posts: getRandomNumber(100, 1000, 0)
-        });
-        dateIteration.setDate(dateIteration.getDate() + 1);
-    }
-    return metrics.reverse();
+  let metrics = [];
+  let dateIteration = new Date(startDate);
+  while (dateIteration <= endDate) {
+    metrics.push({
+      date: new Date(dateIteration),
+      price: getRandomNumber(lowestPrice, highestPrice),
+      posts: getRandomNumber(lowestPosts, highestPosts, 0)
+    });
+    dateIteration.setDate(dateIteration.getDate() + 1);
+  }
+  return metrics;
 }
 
 /**
@@ -38,5 +42,5 @@ function getStockMetricsForDates(startDate, endDate) {
  * @returns {Number} a deciaml number set to the received decimal places
  */
 function getRandomNumber(lowestNumber, highestNumber, decimalPlaces=2) {
-    return Number((Math.random() * (highestNumber - lowestNumber + 1) + lowestNumber).toFixed(decimalPlaces));
+  return Number((Math.random() * (highestNumber - lowestNumber + 1) + lowestNumber).toFixed(decimalPlaces));
 }
